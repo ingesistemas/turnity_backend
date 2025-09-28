@@ -172,7 +172,7 @@ return [
     ],
     'multi_empresa' => [
         'driver' => 'mysql',
-        'host' => env('DB_HOST', 'database-1.ck1wc2qaawf0.us-east-1.rds.amazonaws.com'),
+        'host' => env('DB_HOST', '127.0.0.1'),
         'port' => env('DB_PORT', '3306'),
         'database' => '', // Se reemplaza dinámicamente
         'username' => '',
