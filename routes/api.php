@@ -76,8 +76,6 @@ Route::middleware('api')->group(function () {
         Route::post('/editar-sala', [SalasController::class, 'editarRegistro']);
         Route::post('/activo-sala', [SalasController::class, 'editarActivo']);
 
-        
-
         //Centros de atención
         Route::post('/obtener-centros', [CentrosController::class, 'obtenerRegistros']);
         Route::post('/crear-centro', [CentrosController::class, 'crearRegistro']);
