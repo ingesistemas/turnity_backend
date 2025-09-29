@@ -230,7 +230,7 @@ class UsuarioController extends respuestaController
         try{
             //$actualizado = false;
             
-            $usuario_rol = UsuarioRoleModel::find($request->id);
+            $usuario_rol = UsuarioRoleModel::where('id_usuario', $request->id)->first();
             if($usuario_rol){
                 $actualizado = $usuario_rol->update([
                     "id_rol" => $request->id_rol,
@@ -249,7 +249,7 @@ class UsuarioController extends respuestaController
                 }
             }else{
                 $rol_nuevo = UsuarioRoleModel::create([
-                    "id_usuario" => $request->id_usuario,
+                    "id_usuario" => $request->id,
                     "id_rol" => 2
                 ]);
                 if($rol_nuevo){
