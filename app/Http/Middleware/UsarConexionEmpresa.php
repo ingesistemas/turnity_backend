@@ -48,6 +48,7 @@ class UsarConexionEmpresa extends respuestaController
             // Base de datos principal de empresa
             Config::set('database.connections.infoclic', [
                 'driver' => 'mysql',
+                //'host' => env('DB_HOST', '127.0.0.1'),
                 'host' => env('DB_HOST', '127.0.0.1'),
                 'port' => env('DB_PORT', '3306'),
                 'database' => 'infoclic',
