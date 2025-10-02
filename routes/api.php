@@ -16,31 +16,46 @@ use App\Http\Controllers\turnity\TurnosController;
 use App\Models\infoclic\CiudadModel;
 use Illuminate\Support\Facades\Route;
 
-    use App\Events\llamadoPantalla;
+use App\Events\llamadoPantalla;
 use App\Http\Controllers\empresasBases\RoleController;
 use App\Http\Controllers\turnity\TurnosPantallaController;
 
+// =========================================================================
+// == GRUPO PRINCIPAL DE API (Aquí ponemos las rutas 100% públicas o de LOGIN)
+// =========================================================================
 Route::middleware('api')->group(function () {
 
     // === BASE DE DATOS PRINCIPAL ===
-    
-
-
-    // EMPRESAS (BD principal)
     /* Route::post('/crear-empresa', [EmpresaController::class, 'crearRegistro']);
     Route::post('/editar-empresa', [EmpresaController::class, 'editarRegistro']);
     Route::post('/activo-empresa', [EmpresaController::class, 'editarActivo']); */
 
-    // === BASE DE DATOS DE CADA EMPRESA ===
+    // **********************************************
+    // ** RUTAS PÚBLICAS GLOBALES (NO REQUIEREN AUTENTICACIÓN NI CONEXIÓN EMPRESA)
+    // **********************************************
+    Route::post('/login', [UsuarioController::class, 'login']); // <-- RUTA ESENCIAL DE LOGIN
+    Route::post('/dptos', [InfoclicDptosController::class, 'obtenerDptos']);
+    Route::post('/ciudades', [InfoclicDptosController::class, 'obtenerCiudades']);
+
+    // **********************************************
+    // ** RUTAS PÚBLICAS QUE PUEDEN NECESITAR DATOS DE EMPRESA PERO NO TOKEN (Se puede mover el middleware 'conexion.empresa' aquí si es necesario)
+    // **********************************************
+
+    // Sucursales (Necesario antes del login para elegir)
+    Route::post('/obtener-sucursales', [SucursalController::class, 'obtenerRegistros']); // <--- RUTA PÚBLICA MOVIDA
+    Route::post('/obtener-pisos-sucursal', [PisosController::class, 'obtenerRegistrosSucursal']); // <--- RUTA PÚBLICA MOVIDA
+    Route::post('/obtener-salas-sucursal', [SalasController::class, 'obtenerRegistrosSucursal']); // <--- RUTA PÚBLICA MOVIDA
+    Route::post('/obtener-modulos-sucursal', [ModulosController::class, 'obtenerRegistrosSucursal']); // <--- RUTA PÚBLICA MOVIDA
+    Route::post('/obtener-usuarios-sucursal', [UsuarioController::class, 'obtenerRegistrosSucursal']); // <--- RUTA PÚBLICA MOVIDA
+    Route::post('/obtener-usuarios-sucursales', [SucursalController::class, 'obtenerUsuariosSucursales']); // <--- RUTA PÚBLICA MOVIDA
+
+
+    // === BASE DE DATOS DE CADA EMPRESA (Requieren Token JWT y Conexión de Empresa) ===
     Route::middleware('conexion.empresa')->group(function () {
-
-        // SUCURSALES (BD por empresa)
-
-         //Usuarios
+        
+        // Usuarios (Rutas que sí requieren token JWT)
         Route::post('/obtener-usuarios', [UsuarioController::class, 'obtenerRegistros']);
-        Route::post('/obtener-usuarios-sucursal', [UsuarioController::class, 'obtenerRegistrosSucursal']);
         Route::post('/obtener-usuario-profesion', [UsuarioController::class, 'obtenerRegistroProfesion']);
-        Route::post('/login', [UsuarioController::class, 'login']);
         Route::post('/sucursalesUsuarios', [UsuarioController::class, 'sucursalesUsuarios']);
         Route::post('/crear-usuario', [UsuarioController::class, 'crearRegistro']);
         Route::post('/editar-usuario', [UsuarioController::class, 'editarRegistro']);
@@ -48,30 +63,24 @@ Route::middleware('api')->group(function () {
         Route::post('/activo-usuario', [UsuarioController::class, 'editarActivo']);
         Route::post('/obtener-email', [UsuarioController::class, 'obtenerEmail']);
         Route::post('/editar-clave', [UsuarioController::class, 'editarClave']);
-
-
-        //Sucursales
+        
+        //Sucursales (Rutas privadas)
         Route::post('/crear-sucursal', [SucursalController::class, 'crearRegistro']);
         Route::post('/editar-sucursal', [SucursalController::class, 'editarRegistro']);
         Route::post('/activo-sucursal', [SucursalController::class, 'editarActivo']);
-        Route::post('/obtener-sucursales', [SucursalController::class, 'obtenerRegistros']);
         Route::post('/usuarios-sucursales', [SucursalController::class, 'usuariosSucursales']);
-        Route::post('/obtener-usuarios-sucursales', [SucursalController::class, 'obtenerUsuariosSucursales']);
-
 
         //Roles
         Route::post('/obtener-roles', [RoleController::class, 'obtenerRegistros']);
 
         //Pisos
-        Route::post('/obtener-pisos', [PisosController::class, 'obtenerRegistros']);
-        Route::post('/obtener-pisos-sucursal', [PisosController::class, 'obtenerRegistrosSucursal']);
+        Route::post('/obtener-pisos', [PisosController::class, 'obtenerRegistros']); // <--- ESTA AÚN PUEDE SER PÚBLICA SI LA APP LO NECESITA
         Route::post('/crear-piso', [PisosController::class, 'crearRegistro']);
         Route::post('/editar-piso', [PisosController::class, 'editarRegistro']);
         Route::post('/activo-piso', [PisosController::class, 'editarActivo']);
 
         //Salas
-        Route::post('/obtener-salas', [SalasController::class, 'obtenerRegistros']);
-        Route::post('/obtener-salas-sucursal', [SalasController::class, 'obtenerRegistrosSucursal']);
+        Route::post('/obtener-salas', [SalasController::class, 'obtenerRegistros']); // <--- ESTA AÚN PUEDE SER PÚBLICA SI LA APP LO NECESITA
         Route::post('/crear-sala', [SalasController::class, 'crearRegistro']);
         Route::post('/editar-sala', [SalasController::class, 'editarRegistro']);
         Route::post('/activo-sala', [SalasController::class, 'editarActivo']);
@@ -83,8 +92,7 @@ Route::middleware('api')->group(function () {
         Route::post('/activo-centro', [CentrosController::class, 'editarActivo']);
 
         //Módulos de atención
-        Route::post('/obtener-modulos', [ModulosController::class, 'obtenerRegistros']);
-        Route::post('/obtener-modulos-sucursal', [ModulosController::class, 'obtenerRegistrosSucursal']);
+        Route::post('/obtener-modulos', [ModulosController::class, 'obtenerRegistros']); // <--- ESTA AÚN PUEDE SER PÚBLICA SI LA APP LO NECESITA
         Route::post('/crear-modulo', [ModulosController::class, 'crearRegistro']);
         Route::post('/editar-modulo', [ModulosController::class, 'editarRegistro']);
         Route::post('/activo-modulo', [ModulosController::class, 'editarActivo']);
@@ -128,10 +136,7 @@ Route::middleware('api')->group(function () {
 
         //Casos
         Route::post('/obtener-casos', [CasosController::class, 'obtenerRegistros']);
- 
+    
     });
-
-    Route::post('/dptos', [InfoclicDptosController::class, 'obtenerDptos']);
-    Route::post('/ciudades', [InfoclicDptosController::class, 'obtenerCiudades']);
 
 });
