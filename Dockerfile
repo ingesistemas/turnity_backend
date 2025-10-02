@@ -1,41 +1,60 @@
-# 1. Fase de Construcción (Build Stage)
-# Usamos una imagen base que incluye PHP 8.x y las extensiones comunes
+# ----------------------------------------------------
+# FASE 1: CONSTRUCCIÓN Y DEPENDENCIAS (Base Stage)
+# ----------------------------------------------------
 FROM php:8.3-fpm-alpine AS base
 
-# Instalar dependencias del sistema y extensiones de PHP necesarias
+# 1. Instalar dependencias del sistema
 RUN apk update && apk add --no-cache \
+    nginx \
     git \
     curl \
     libxml2-dev \
     libzip-dev \
-    # Instalar extensiones de PHP
+    # MySQL client es útil para la depuración
+    mysql-client \
+    # Extensiones de PHP
     && docker-php-ext-install pdo_mysql opcache bcmath exif \
-    # Instalar Composer
+    # Instalar Composer globalmente
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# 2. Configuración de Producción
-FROM base AS final
+# Establecer el directorio de trabajo (donde estará la app)
+WORKDIR /var/www/html
+
+# 2. Copiar el código fuente
+COPY . .
+
+# 3. Instalar dependencias de Laravel
+# --no-scripts es CRUCIAL para evitar el error de Pusher/APP_KEY durante la compilación
+RUN composer install --no-dev --optimize-autoloader --no-scripts
+
+# ----------------------------------------------------
+# FASE 2: FINAL DE EJECUCIÓN (Final Stage)
+# ----------------------------------------------------
+FROM php:8.3-fpm-alpine
+
+# Instalar Nginx y utilidades de nuevo en el Stage final, ya que no se copian automáticamente
+RUN apk update && apk add --no-cache nginx
 
 # Establecer el directorio de trabajo
 WORKDIR /var/www/html
 
-# Copiar el código de la aplicación (excluyendo vendor/, que instalaremos)
-COPY . .
+# Copiar el código del Stage base
+COPY --from=base /var/www/html /var/www/html
 
-# Instalar dependencias de Laravel
-RUN composer install --no-dev --optimize-autoloader --no-scripts
-
-# Configuración de permisos de almacenamiento
+# 1. Configuración de permisos de Laravel (esencial)
+# El usuario 'www-data' debe poder escribir en estas carpetas
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Copiar la configuración de Nginx y el script de inicio
+# 2. Copiar la configuración de Nginx (debe existir en docker/nginx/default.conf)
+# NOTA: Usamos el puerto 8080 en esta configuración.
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY docker/start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
 
-# Exponer el puerto
+# 3. Cloud Run inyecta la variable PORT, pero la exponemos
+ENV PORT 8080
 EXPOSE 8080
 
-# Comando de inicio del contenedor (Lo que Render ejecutará)
-CMD ["/usr/local/bin/start.sh"]
+# 4. Comando de inicio (CMD)
+# El comando final inicia PHP-FPM y Nginx a la vez. 
+# Esto es la solución al error "failed to start and listen on the port 8080".
+CMD sh -c "php-fpm && nginx -g 'daemon off;'"
